@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use itertools::Itertools;
+use log::info;
 
 use super::{ChatResponse, CompletionSettings, LLMError, LlmWrapper, LLM};
 
@@ -19,22 +20,30 @@ impl Default for LlamaCppServer {
 #[async_trait::async_trait]
 impl LLM for LlamaCppServer {
     async fn validate_connection(&self) -> Result<(), LLMError> {
-        let url = format!("{}/models", self.url);
-        let response = reqwest::get(url)
-            .await
-            .map_err(|_| LLMError::FailedToAccessServer)?;
+        let url = format!("{}/health", self.url);
 
-        let res_text = response
-            .text()
-            .await
-            .map_err(|_| LLMError::FailedToAccessServer)?;
+        loop {
+            let response = reqwest::get(&url)
+                .await
+                .map_err(|_| LLMError::FailedToAccessServer)?;
 
-        let res_json = json::parse(&res_text).map_err(|_| LLMError::JsonParseError {
-            json: res_text.clone(),
-        })?;
+            let res_text = response
+                .text()
+                .await
+                .map_err(|_| LLMError::FailedToAccessServer)?;
 
-        if res_json.is_empty() {
-            return Err(LLMError::EmptyModelList);
+            let res_json = json::parse(&res_text).map_err(|_| LLMError::JsonParseError {
+                json: res_text.clone(),
+            })?;
+
+            let status = res_json["status"].as_str().unwrap_or("");
+
+            match status {
+                "ok" => break,
+                "error" => return Err(LLMError::ModelNotLoaded),
+                "loading_model" => {}
+                state => return Err(LLMError::UnexpectedServerState(state.to_string())),
+            }
         }
 
         Ok(())
@@ -91,6 +100,9 @@ impl LLM for LlamaCppServer {
         })?;
 
         let elapsed = time_start.elapsed();
+        let content = res_json["content"].as_str().unwrap_or("");
+
+        info!("LLM Response: {} ({:.0} ms)", content, elapsed.as_millis());
 
         Ok(ChatResponse {
             text: res_json["content"].to_string(),
