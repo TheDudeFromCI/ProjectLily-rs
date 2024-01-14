@@ -49,10 +49,13 @@ impl Agent {
         self.log.update_pre_prompt(pre_prompt);
         let messages = self.log.get_messages();
 
-        let prompt = self.prompt_format.format_chat_logs(&messages);
+        let prompt = self
+            .prompt_format
+            .format_chat_logs(&messages, &self.settings.llm_options);
+
         Ok(self
             .llm
-            .query_completion(prompt, &self.prompt_format.completion_settings)
+            .query_completion(prompt, &self.settings.llm_options)
             .await?)
     }
 

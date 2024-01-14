@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompletionSettings {
     pub model: Option<String>,
     pub context_length: usize,
@@ -18,6 +18,12 @@ pub struct CompletionSettings {
     pub frequency_penalty: f32,
     pub presence_penalty: f32,
     pub logit_bias: HashMap<i32, f32>,
+    pub system_message_prefix: String,
+    pub system_message_suffix: String,
+    pub user_message_prefix: String,
+    pub user_message_suffix: String,
+    pub assistant_message_prefix: String,
+    pub assistant_message_suffix: String,
 }
 
 impl Default for CompletionSettings {
@@ -37,6 +43,12 @@ impl Default for CompletionSettings {
             frequency_penalty: 0.0,
             presence_penalty: 0.0,
             logit_bias: HashMap::new(),
+            system_message_prefix: String::from("### system\n"),
+            system_message_suffix: String::from("\n"),
+            user_message_prefix: String::from("### user\n"),
+            user_message_suffix: String::from("\n"),
+            assistant_message_prefix: String::from("### assistant\n"),
+            assistant_message_suffix: String::from("\n"),
         }
     }
 }

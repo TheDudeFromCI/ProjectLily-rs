@@ -67,4 +67,8 @@ pub enum LLMError {
     JsonParseError { json: String },
     #[error("Failed to serialize query")]
     FailedToSerializeQuery,
+    #[error("Failed load the language model")]
+    ModelNotLoaded,
+    #[error("Server health returned within an unexpected state: {0}")]
+    UnexpectedServerState(String),
 }

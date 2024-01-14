@@ -8,26 +8,12 @@ use crate::llm::CompletionSettings;
 
 #[derive(Debug)]
 pub struct PromptFormat {
-    pub completion_settings: CompletionSettings,
-    pub system_msg_prefix: String,
-    pub system_msg_suffix: String,
-    pub user_msg_prefix: String,
-    pub user_msg_suffix: String,
-    pub assistant_msg_prefix: String,
-    pub assistant_msg_suffix: String,
     pub prompt_suffix_message: ChatMessage,
 }
 
 impl Default for PromptFormat {
     fn default() -> Self {
         Self {
-            completion_settings: CompletionSettings::default(),
-            system_msg_prefix: "### system\n".to_string(),
-            system_msg_suffix: "\n".to_string(),
-            user_msg_prefix: "### user\n".to_string(),
-            user_msg_suffix: "\n".to_string(),
-            assistant_msg_prefix: "### assistant\n".to_string(),
-            assistant_msg_suffix: "\n".to_string(),
             prompt_suffix_message: ChatMessage::Assistant {
                 process: Subprocess::InnerMonologue,
                 action: MessageAction::Command,
@@ -48,7 +34,7 @@ impl PromptFormat {
 
     pub fn get_system_prompt(&self, agent: &Agent) -> String {
         let time = &Local::now().format("%Y-%m-%d").to_string();
-        let context_length = &self.completion_settings.context_length.to_string();
+        let context_length = &agent.settings.llm_options.context_length.to_string();
         let command_list = commands::COMMANDS
             .iter()
             .map(|c| {
@@ -74,33 +60,33 @@ impl PromptFormat {
             .replace("{primary_directive}", &agent.settings.directive)
     }
 
-    pub fn format_chat_logs(&self, logs: &[&ChatMessage]) -> String {
+    pub fn format_chat_logs(&self, logs: &[&ChatMessage], settings: &CompletionSettings) -> String {
         let prompt = logs
             .iter()
             .map(|l| match &l {
                 ChatMessage::System { .. } => {
                     format!(
                         "{}{}{}",
-                        self.system_msg_prefix,
+                        settings.system_message_prefix,
                         l.get_content(),
-                        self.system_msg_suffix
+                        settings.system_message_suffix
                     )
                 }
 
                 ChatMessage::User { .. } => {
                     format!(
                         "{}{}{}",
-                        self.user_msg_prefix,
+                        settings.user_message_prefix,
                         l.get_content(),
-                        self.user_msg_suffix
+                        settings.user_message_suffix
                     )
                 }
 
                 ChatMessage::Assistant { .. } => format!(
                     "{}{}{}",
-                    self.assistant_msg_prefix,
+                    settings.assistant_message_prefix,
                     l.get_content(),
-                    self.assistant_msg_suffix
+                    settings.assistant_message_suffix
                 ),
             })
             .join("\n");
@@ -109,7 +95,7 @@ impl PromptFormat {
             ChatMessage::System { .. } => {
                 format!(
                     "{}{}",
-                    self.system_msg_prefix,
+                    settings.system_message_prefix,
                     self.prompt_suffix_message.get_content(),
                 )
             }
@@ -117,14 +103,14 @@ impl PromptFormat {
             ChatMessage::User { .. } => {
                 format!(
                     "{}{}",
-                    self.user_msg_prefix,
+                    settings.user_message_prefix,
                     self.prompt_suffix_message.get_content(),
                 )
             }
 
             ChatMessage::Assistant { .. } => format!(
                 "{}{}",
-                self.assistant_msg_prefix,
+                settings.assistant_message_prefix,
                 self.prompt_suffix_message.get_content(),
             ),
         };
