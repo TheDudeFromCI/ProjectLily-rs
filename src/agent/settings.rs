@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use log::debug;
 use serde::{Deserialize, Serialize};
 
 use super::AgentError;
@@ -18,6 +19,9 @@ impl AgentSettings {
     pub fn from_file(file: &PathBuf) -> Result<Self, AgentError> {
         let contents = std::fs::read_to_string(file)?;
         let settings = serde_json::from_str(&contents)?;
+
+        debug!("Loaded settings: {:?}", settings);
+
         Ok(settings)
     }
 }

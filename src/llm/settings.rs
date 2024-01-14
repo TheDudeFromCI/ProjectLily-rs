@@ -1,7 +1,23 @@
-use std::collections::HashMap;
+use std::fmt;
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum LogitBias {
+    Never { token: i32 },
+    Bias { token: i32, bias: f32 },
+}
+
+impl fmt::Display for LogitBias {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LogitBias::Never { token } => write!(f, "[{},false]", token),
+            LogitBias::Bias { token, bias } => write!(f, "[{},{:.03}]", token, bias),
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompletionSettings {
@@ -18,7 +34,7 @@ pub struct CompletionSettings {
     pub repeat_last_n: i32,
     pub frequency_penalty: f32,
     pub presence_penalty: f32,
-    pub logit_bias: HashMap<i32, f32>,
+    pub logit_bias: Vec<LogitBias>,
     pub system_message_prefix: String,
     pub system_message_suffix: String,
     pub user_message_prefix: String,
@@ -44,7 +60,7 @@ impl Default for CompletionSettings {
             repeat_last_n: 64,
             frequency_penalty: 0.0,
             presence_penalty: 0.0,
-            logit_bias: HashMap::new(),
+            logit_bias: Vec::new(),
             system_message_prefix: String::from("### system\n"),
             system_message_suffix: String::from("\n"),
             user_message_prefix: String::from("### user\n"),

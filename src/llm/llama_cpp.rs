@@ -1,9 +1,9 @@
 use std::time::Instant;
 
-use itertools::Itertools;
-use log::info;
+use json::JsonValue;
+use log::{debug, info};
 
-use super::{ChatResponse, CompletionSettings, LLMError, LlmWrapper, LLM};
+use super::{ChatResponse, CompletionSettings, LLMError, LlmWrapper, LogitBias, LLM};
 
 pub struct LlamaCppServer {
     pub url: String,
@@ -54,21 +54,12 @@ impl LLM for LlamaCppServer {
         prompt: String,
         settings: &CompletionSettings,
     ) -> Result<ChatResponse, LLMError> {
-        let logit_bias = format!(
-            "[{}]",
-            settings
-                .logit_bias
-                .iter()
-                .map(|(k, v)| format!("[{},{}]", k, v))
-                .join(",")
-        );
-
         let grammar = match &settings.grammar {
             Some(grammar) => Some(std::fs::read_to_string(grammar)?),
             None => None,
         };
 
-        let json = json::object! {
+        let mut json = json::object! {
             prompt: prompt,
             temperature: settings.temperature,
             top_k: settings.top_k,
@@ -79,11 +70,32 @@ impl LLM for LlamaCppServer {
             repeat_last_n: settings.repeat_last_n,
             presence_penalty: settings.presence_penalty,
             frequency_penalty: settings.frequency_penalty,
-            logit_bias: logit_bias,
+            logit_bias: Vec::<String>::with_capacity(0),
             grammar: grammar,
             cache_prompt: true,
             stream: false,
         };
+
+        for logit_bias in &settings.logit_bias {
+            let array = match logit_bias {
+                LogitBias::Never { token } => {
+                    vec![
+                        JsonValue::Number((*token).into()),
+                        JsonValue::Boolean(false),
+                    ]
+                }
+                LogitBias::Bias { token, bias } => vec![
+                    JsonValue::Number((*token).into()),
+                    JsonValue::Number((*bias).into()),
+                ],
+            };
+
+            json["logit_bias"]
+                .push(JsonValue::Array(array))
+                .expect("Failed to push bias into JSON");
+        }
+
+        debug!("LLM Request: {}", json.pretty(2));
 
         let url = format!("{}/completion", self.url);
         let time_start = Instant::now();
