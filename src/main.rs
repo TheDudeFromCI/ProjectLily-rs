@@ -18,10 +18,15 @@ struct Args {
 #[tokio::main]
 async fn main() -> ExitCode {
     pretty_env_logger::formatted_timed_builder()
-        .filter(None, log::LevelFilter::Trace)
-        .filter_module("hyper", log::LevelFilter::Info)
-        .filter_module("tracing", log::LevelFilter::Warn)
         .parse_default_env()
+        .filter_module("hyper", log::LevelFilter::Warn)
+        .filter_module("tracing", log::LevelFilter::Warn)
+        .filter_module("serenity", log::LevelFilter::Warn)
+        .filter_module("rustls", log::LevelFilter::Warn)
+        .filter_module("h2", log::LevelFilter::Warn)
+        .filter_module("reqwest", log::LevelFilter::Warn)
+        .filter_module("cached_path", log::LevelFilter::Warn)
+        .filter_module("tungstenite", log::LevelFilter::Warn)
         .init();
 
     let args = Args::parse();
