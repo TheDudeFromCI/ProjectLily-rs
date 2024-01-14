@@ -17,7 +17,12 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> ExitCode {
-    pretty_env_logger::init_timed();
+    pretty_env_logger::formatted_timed_builder()
+        .filter(None, log::LevelFilter::Trace)
+        .filter_module("hyper", log::LevelFilter::Info)
+        .filter_module("tracing", log::LevelFilter::Warn)
+        .parse_default_env()
+        .init();
 
     let args = Args::parse();
 

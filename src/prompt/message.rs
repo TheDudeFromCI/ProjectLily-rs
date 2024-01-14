@@ -1,5 +1,7 @@
 use std::fmt;
 
+use log::info;
+
 use super::Subprocess;
 
 pub struct MessageLog {
@@ -38,12 +40,11 @@ impl MessageLog {
     }
 
     pub fn add_message(&mut self, message: ChatMessage) {
-        println!("{}", message);
+        info!("{} : {}", message.get_role(), message.get_content());
         self.messages.push(message);
     }
 
     pub fn add_temp_message(&mut self, message: ChatMessage) {
-        println!("<== TEMP ==> : {}", message);
         self.temp_messages.push(message);
     }
 
@@ -85,12 +86,6 @@ pub enum ChatMessage {
         action: MessageAction,
         content: String,
     },
-}
-
-impl fmt::Display for ChatMessage {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "### {}\n{}", self.get_role(), self.get_content())
-    }
 }
 
 impl ChatMessage {
