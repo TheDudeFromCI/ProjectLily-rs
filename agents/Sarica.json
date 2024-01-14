@@ -27,6 +27,7 @@
         "user_message_prefix": "<|im_start|> user\n",
         "user_message_suffix": "<|im_end|>\n",
         "assistant_message_prefix": "<|im_start|> assistant\n",
-        "assistant_message_suffix": "<|im_end|>\n"
+        "assistant_message_suffix": "<|im_end|>\n",
+        "grammar": "grammar/command.gbnf"
     }
 }

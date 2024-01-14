@@ -63,6 +63,11 @@ impl LLM for LlamaCppServer {
                 .join(",")
         );
 
+        let grammar = match &settings.grammar {
+            Some(grammar) => Some(std::fs::read_to_string(grammar)?),
+            None => None,
+        };
+
         let json = json::object! {
             prompt: prompt,
             temperature: settings.temperature,
@@ -75,6 +80,7 @@ impl LLM for LlamaCppServer {
             presence_penalty: settings.presence_penalty,
             frequency_penalty: settings.frequency_penalty,
             logit_bias: logit_bias,
+            grammar: grammar,
             cache_prompt: true,
             stream: false,
         };

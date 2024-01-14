@@ -71,4 +71,6 @@ pub enum LLMError {
     ModelNotLoaded,
     #[error("Server health returned within an unexpected state: {0}")]
     UnexpectedServerState(String),
+    #[error("Failed to load grammar file at: {0}")]
+    FailedToLoadGrammar(#[from] std::io::Error),
 }

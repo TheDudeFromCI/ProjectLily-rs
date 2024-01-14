@@ -1,0 +1,15 @@
+root ::= command newline
+
+command ::= say | think | save-memory | recall-memory
+
+say ::= "say" space message
+think ::= "think" space message
+save-memory ::= "save_memory" space message
+recall-memory ::= "recall_memory" space message
+
+message ::= quote text quote
+text ::= [0-9a-zA-Z .?!]+
+
+quote ::= "\""
+space ::= " "
+newline ::= "\n"
