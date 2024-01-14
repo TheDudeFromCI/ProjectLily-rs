@@ -8,8 +8,20 @@ save-memory ::= "save_memory" space message
 recall-memory ::= "recall_memory" space message
 
 message ::= quote text quote
-text ::= [0-9a-zA-Z .?!]+
+text ::= sentence (space sentence)*
 
-quote ::= "\""
-space ::= " "
+sentence-join ::= (", " | "; ")
+sentence-end ::= ("." | "!" | "?" | "...")
+word-join ::= ("'" | "-")
+number ::= [0-9]+
+
+lowercase-word ::=       [a-z]+ (word-join [a-z]+)?
+titlecase-word ::= [A-Z] [a-z]* (word-join [a-z]+)?
+word ::= titlecase-word | lowercase-word | number
+
+word-string ::= word (space word)*
+sentence ::= word-string (sentence-join word-string)* sentence-end
+
 newline ::= "\n"
+space ::= " "
+quote ::= "\""
