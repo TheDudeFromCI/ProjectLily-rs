@@ -30,7 +30,7 @@ Reflect on their causes and strategize to prevent recurrence.
 # Commands:
 {command_list}
 
-# Personality:
+# Personality
 {personality}
 
 # Active Memory Context

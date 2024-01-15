@@ -12,8 +12,8 @@ pub use save_memory::*;
 pub use say::*;
 pub use think::*;
 
-use crate::agent::Agent;
-use crate::prompt::{ChatMessage, MessageAction, Subprocess, SystemMessageSeverity};
+use crate::agent::{Agent, Subprocess};
+use crate::prompt::{ChatMessage, MessageAction, SystemMessageSeverity};
 
 lazy_static! {
     pub static ref COMMANDS: [Box<dyn Command + Send + Sync>; 4] = [

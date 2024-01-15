@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
 use super::{Command, CommandError, CommandExec};
-use crate::agent::Agent;
-use crate::prompt::{ChatMessage, MessageAction, Subprocess};
+use crate::agent::{Agent, Subprocess};
+use crate::prompt::{ChatMessage, MessageAction};
 
 pub struct ThinkCommand;
 

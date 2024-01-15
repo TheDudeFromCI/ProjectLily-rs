@@ -3,7 +3,7 @@ use std::fmt;
 use itertools::Itertools;
 use log::info;
 
-use super::Subprocess;
+use crate::agent::Subprocess;
 use crate::llm::CompletionSettings;
 
 pub struct MessageLog {

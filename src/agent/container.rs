@@ -1,5 +1,6 @@
 use chrono::Local;
 use itertools::Itertools;
+use log::debug;
 
 use super::{AgentError, AgentSettings};
 use crate::commands::{self};
@@ -84,6 +85,10 @@ impl Agent {
             .replace("{memory_context}", memory_context)
             .replace("{primary_directive}", &self.settings.directive);
 
+        debug!(
+            "Updating system prompt.\n==========\n{}\n==========",
+            &prompt
+        );
         self.log.update_pre_prompt(prompt);
     }
 
