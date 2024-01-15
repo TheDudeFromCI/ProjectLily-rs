@@ -1,8 +1,10 @@
 use std::fmt;
 
+use itertools::Itertools;
 use log::info;
 
 use super::Subprocess;
+use crate::llm::CompletionSettings;
 
 pub struct MessageLog {
     messages: Vec<ChatMessage>,
@@ -21,10 +23,7 @@ impl MessageLog {
     }
 
     pub fn clear_log(&mut self) {
-        self.messages = vec![ChatMessage::System {
-            severity: SystemMessageSeverity::Info,
-            content: "Pre-Prompt Placeholder".to_string(),
-        }];
+        self.messages.truncate(1);
         self.temp_messages.clear();
     }
 
@@ -61,6 +60,14 @@ impl MessageLog {
         }
 
         message_pointers
+    }
+
+    pub fn format(&self, settings: &CompletionSettings) -> String {
+        self.messages
+            .iter()
+            .chain(self.temp_messages.iter())
+            .map(|l| l.format(settings))
+            .join("")
     }
 }
 
@@ -117,6 +124,37 @@ impl ChatMessage {
                 content,
             } => {
                 format!("[{}] {}: {}", process, action, content)
+            }
+        }
+    }
+
+    pub fn format(&self, settings: &CompletionSettings) -> String {
+        match self {
+            ChatMessage::System { .. } => {
+                format!(
+                    "{}{}{}",
+                    settings.system_message_prefix,
+                    self.get_content(),
+                    settings.system_message_suffix
+                )
+            }
+
+            ChatMessage::User { .. } => {
+                format!(
+                    "{}{}{}",
+                    settings.user_message_prefix,
+                    self.get_content(),
+                    settings.user_message_suffix
+                )
+            }
+
+            ChatMessage::Assistant { .. } => {
+                format!(
+                    "{}{}{}",
+                    settings.assistant_message_prefix,
+                    self.get_content(),
+                    settings.assistant_message_suffix
+                )
             }
         }
     }
