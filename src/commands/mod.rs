@@ -12,7 +12,7 @@ pub use save_memory::*;
 pub use say::*;
 pub use think::*;
 
-use crate::agent::{Agent, Subprocess};
+use crate::agent::Agent;
 use crate::prompt::{ChatMessage, MessageAction, SystemMessageSeverity};
 
 lazy_static! {
@@ -34,7 +34,6 @@ pub struct CommandExec {
 impl From<CommandExec> for ChatMessage {
     fn from(value: CommandExec) -> Self {
         ChatMessage::Assistant {
-            process: Subprocess::InnerMonologue,
             action: MessageAction::Command,
             content: value.cmd_line,
         }
@@ -56,7 +55,6 @@ pub async fn execute(agent: &mut Agent, cmd: &str) {
         Ok(_) => {}
         Err(err) => {
             agent.log_temp_message(ChatMessage::Assistant {
-                process: Subprocess::InnerMonologue,
                 action: MessageAction::Command,
                 content: cmd.to_string(),
             });

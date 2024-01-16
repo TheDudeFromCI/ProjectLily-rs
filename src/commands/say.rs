@@ -3,7 +3,7 @@ use std::time::Duration;
 use async_trait::async_trait;
 
 use super::{Command, CommandError, CommandExec};
-use crate::agent::{Agent, Subprocess};
+use crate::agent::Agent;
 use crate::prompt::{ChatMessage, MessageAction};
 
 pub struct SayCommand;
@@ -37,7 +37,6 @@ impl Command for SayCommand {
         agent.log_message(exec.clone().into()).await;
         agent
             .log_message(ChatMessage::Assistant {
-                process: Subprocess::PublicSpeaker,
                 action: MessageAction::Say,
                 content: exec.args[0].clone(),
             })

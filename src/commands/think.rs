@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use super::{Command, CommandError, CommandExec};
-use crate::agent::{Agent, Subprocess};
+use crate::agent::Agent;
 use crate::prompt::{ChatMessage, MessageAction};
 
 pub struct ThinkCommand;
@@ -35,8 +35,7 @@ impl Command for ThinkCommand {
         agent.log_message(exec.clone().into()).await;
         agent
             .log_message(ChatMessage::Assistant {
-                process: Subprocess::InnerMonologue,
-                action: MessageAction::Think,
+                action: MessageAction::SituationalAnalysis,
                 content: exec.args[0].clone(),
             })
             .await;

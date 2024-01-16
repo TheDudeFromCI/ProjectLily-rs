@@ -105,7 +105,6 @@ impl EventHandler for ProjectLilyDiscordHandler {
             .channel
             .send_message(ChatMessage::User {
                 username: msg.author.name,
-                action: MessageAction::Say,
                 content: msg.content.clone(),
             })
             .await;
