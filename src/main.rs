@@ -4,7 +4,7 @@ use std::process::ExitCode;
 use clap::Parser;
 use log::{error, info};
 use project_lily::agent::{Agent, AgentSettings};
-use project_lily::communications::discord;
+use project_lily::communications::discord::{self, DiscordSettings};
 use project_lily::llm::llama_cpp::LlamaCppServer;
 use project_lily::llm::LlmWrapper;
 
@@ -13,6 +13,15 @@ use project_lily::llm::LlmWrapper;
 struct Args {
     #[arg(long)]
     agent: PathBuf,
+
+    #[arg(long)]
+    discord: bool,
+
+    #[arg(long)]
+    discord_channel: Option<u64>,
+
+    #[arg(long)]
+    discord_log_all: bool,
 }
 
 #[tokio::main]
@@ -64,8 +73,16 @@ async fn main() -> ExitCode {
         }
     };
 
-    info!("Connecting to Discord");
-    discord::run(&mut agent.communication_manager);
+    if args.discord {
+        info!("Connecting to Discord");
+
+        let discord_settings = DiscordSettings {
+            channel_id: args.discord_channel,
+            log_all: args.discord_log_all,
+        };
+
+        discord::run(discord_settings, &mut agent.communication_manager);
+    }
 
     loop {
         if let Err(err) = agent.update().await {
