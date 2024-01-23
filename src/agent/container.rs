@@ -1,11 +1,13 @@
 use chrono::Local;
+use itertools::Itertools;
 use log::{debug, info};
 
-use super::{AgentError, AgentSettings, ProcessStateMachine};
+use super::{AgentError, AgentSettings};
+use crate::actions::{MessageAction, ProcessStateMachine};
 use crate::communications::CommunicationManager;
 use crate::llm::LlmWrapper;
 use crate::mem_db::MemoryDB;
-use crate::prompt::{ChatMessage, SYSTEM_PROMPT};
+use crate::prompt::{ChatMessage, ACTION_STATE, SYSTEM_PROMPT};
 
 pub struct Agent {
     pub settings: AgentSettings,
@@ -94,7 +96,15 @@ impl Agent {
 
     pub async fn update_system_prompt(&mut self) -> Result<(), AgentError> {
         let time = &Local::now().format("%Y-%m-%d").to_string();
-        let memory_context = "None";
+        let memory_context = "EMPTY";
+        let action_states = MessageAction::ALL
+            .iter()
+            .map(|s| {
+                ACTION_STATE
+                    .replace("{name}", s.name())
+                    .replace("{explanation}", s.get_explanation())
+            })
+            .join("\n");
 
         let prompt = SYSTEM_PROMPT
             .trim()
@@ -104,7 +114,8 @@ impl Agent {
             .replace("{command_list}", "")
             .replace("{personality}", &self.settings.persona)
             .replace("{memory_context}", memory_context)
-            .replace("{primary_directive}", &self.settings.directive);
+            .replace("{primary_directive}", &self.settings.directive)
+            .replace("{action_states}", &action_states);
 
         info!(
             "Updating system prompt.\n==========\n{}\n==========",

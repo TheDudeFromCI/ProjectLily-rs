@@ -1,4 +1,4 @@
-use crate::prompt::MessageAction;
+use super::MessageAction;
 
 pub struct ProcessStateMachine {
     last_action: Option<MessageAction>,

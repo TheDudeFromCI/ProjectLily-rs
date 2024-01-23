@@ -1,3 +1,4 @@
+pub mod actions;
 pub mod agent;
 pub mod communications;
 pub mod llm;

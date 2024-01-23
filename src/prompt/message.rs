@@ -1,4 +1,5 @@
-use super::{MessageAction, SystemMessageSeverity};
+use super::SystemMessageSeverity;
+use crate::actions::MessageAction;
 use crate::llm::CompletionSettings;
 
 #[derive(Debug, Clone)]

@@ -8,8 +8,9 @@ use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 
 use super::CommunicationManager;
+use crate::actions::MessageAction;
 use crate::communications::TwoWayChannel;
-use crate::prompt::{ChatMessage, MessageAction, SystemMessageSeverity};
+use crate::prompt::{ChatMessage, SystemMessageSeverity};
 
 pub struct DiscordSettings {
     pub channel_id: Option<u64>,
