@@ -86,7 +86,7 @@ impl EventHandler for ProjectLilyDiscordHandler {
                     action, content, ..
                 } = message
                 {
-                    let message = format!("{}: {}", action, content);
+                    let message = format!("```yml\n{}: {}```", action, content);
                     channel_id
                         .send_message(&ctx.http, CreateMessage::new().content(message))
                         .await

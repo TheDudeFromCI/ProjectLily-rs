@@ -16,7 +16,8 @@ of the most relevant memories based on your search query. You may add new memori
 
 # Action States
 Your mind operates by flipping through a series of action states. When inside of a given state, your response should be based on the state's purpose to maximize
-the effectiveness of your response and internal thought process.
+the effectiveness of your response and internal thought process. Remember, ALL OF YOUR MESSAGES ARE PRIVATE unless you are in the SAY state. Do NOT send any
+messages to the user unless you are in the SAY state, otherwise it will not be seen.
 These states are:
 {action_states}
 

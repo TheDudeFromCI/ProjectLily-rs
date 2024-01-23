@@ -104,7 +104,7 @@ impl Agent {
                     .replace("{name}", s.name())
                     .replace("{explanation}", s.get_explanation())
             })
-            .join("\n");
+            .join("");
 
         let prompt = SYSTEM_PROMPT
             .trim()

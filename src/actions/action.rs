@@ -65,7 +65,7 @@ impl MessageAction {
     pub fn as_grammar(&self) -> String {
         match self {
             MessageAction::Query { answers, .. } => answers.as_grammar(),
-            _ => String::from(r#"root ::= [^\n]+ "\n""#),
+            _ => String::from(r#"root ::= [^\s\n][^\n]* "\n""#),
         }
     }
 
