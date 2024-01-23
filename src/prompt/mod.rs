@@ -1,9 +1,7 @@
 mod consts;
-mod format;
 mod message;
-mod subprocess;
+mod severity;
 
 pub use consts::*;
-pub use format::*;
 pub use message::*;
-pub use subprocess::*;
+pub use severity::*;

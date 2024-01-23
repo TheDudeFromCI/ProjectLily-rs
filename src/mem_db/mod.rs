@@ -1,77 +1,58 @@
-use kdtree::distance::squared_euclidean;
-use kdtree::KdTree;
-use rust_bert::pipelines::sentence_embeddings::{
-    SentenceEmbeddingsBuilder,
-    SentenceEmbeddingsModel,
-    SentenceEmbeddingsModelType,
-};
+mod log;
+mod vector;
+
 use rust_bert::RustBertError;
-use tch::Device;
 use thiserror::Error;
 use tokio::task::JoinError;
 
-pub const EMBEDDING_DIM: usize = 384;
+use self::log::MessageLog;
+use self::vector::VectorDB;
+use crate::llm::CompletionSettings;
+use crate::prompt::ChatMessage;
 
 pub struct MemoryDB {
-    model: SentenceEmbeddingsModel,
-    tree: KdTree<f32, String, [f32; EMBEDDING_DIM]>,
+    log: MessageLog,
+    vector: VectorDB,
+}
+
+impl MemoryDB {
+    pub async fn new() -> Result<Self, MemoryDBError> {
+        Ok(Self {
+            log: MessageLog::new(),
+            vector: VectorDB::new().await?,
+        })
+    }
+
+    pub fn update_pre_prompt(&mut self, pre_prompt: String, tokens: usize) {
+        self.log.update_pre_prompt(pre_prompt, tokens);
+    }
+
+    pub fn add_vector_memory(&mut self, message: &ChatMessage) -> Result<(), MemoryDBError> {
+        let content = format!("{}:\n{}", message.get_role(), message.get_content());
+        self.vector.add_memory(&content)
+    }
+
+    pub fn search_vector_memory(
+        &self,
+        query: &str,
+        count: usize,
+    ) -> Result<Vec<RecalledMemory>, MemoryDBError> {
+        self.vector.search(query, count)
+    }
+
+    pub fn add_log_memory(&mut self, message: ChatMessage) {
+        self.log.add_message(message);
+    }
+
+    pub fn get_log_prompt(&self, settings: &CompletionSettings) -> String {
+        self.log.format(settings)
+    }
 }
 
 #[derive(Debug)]
 pub struct RecalledMemory {
     pub text: String,
     pub score: f32,
-}
-
-impl MemoryDB {
-    pub async fn new() -> Result<Self, MemoryDBError> {
-        let model = tokio::task::spawn_blocking(|| {
-            SentenceEmbeddingsBuilder::remote(SentenceEmbeddingsModelType::AllMiniLmL12V2)
-                .with_device(Device::Cpu)
-                .create_model()
-        })
-        .await??;
-
-        Ok(Self {
-            model,
-            tree: KdTree::new(EMBEDDING_DIM),
-        })
-    }
-
-    fn embed(&self, text: &str) -> Result<[f32; EMBEDDING_DIM], MemoryDBError> {
-        let embeddings = self.model.encode(&[text])?;
-        let tensor = embeddings[0].as_slice();
-        let embed: [f32; EMBEDDING_DIM] =
-            tensor
-                .try_into()
-                .map_err(|_| MemoryDBError::WrongEmbeddingSize {
-                    expected: EMBEDDING_DIM,
-                    actual: tensor.len(),
-                })?;
-
-        Ok(embed)
-    }
-
-    pub fn add_memory(&mut self, text: &str) -> Result<(), MemoryDBError> {
-        let embedding = self.embed(text)?;
-        self.tree.add(embedding, text.to_owned())?;
-        Ok(())
-    }
-
-    pub fn search(&self, query: &str, count: usize) -> Result<Vec<RecalledMemory>, MemoryDBError> {
-        let query_embedding = self.embed(query)?;
-        let nearest = self
-            .tree
-            .nearest(&query_embedding, count, &squared_euclidean)?;
-
-        Ok(nearest
-            .iter()
-            .map(|(distance, data)| RecalledMemory {
-                text: data.to_string(),
-                score: distance.sqrt(),
-            })
-            .collect())
-    }
 }
 
 #[derive(Debug, Error)]
@@ -84,21 +65,4 @@ pub enum MemoryDBError {
     KdTreeError(#[from] kdtree::ErrorKind),
     #[error("Failed to spawn blocking task: {0}")]
     AsyncError(#[from] JoinError),
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[tokio::test]
-    async fn simple_db() {
-        let mut db = MemoryDB::new().await.unwrap();
-
-        db.add_memory("My favorite color is red.").unwrap();
-        db.add_memory("I like apples.").unwrap();
-        db.add_memory("The sky is blue.").unwrap();
-
-        let results = db.search("fruit", 1).unwrap();
-        assert_eq!(results[0].text, "I like apples.");
-    }
 }

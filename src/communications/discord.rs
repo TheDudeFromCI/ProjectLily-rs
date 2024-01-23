@@ -1,6 +1,6 @@
 use std::env;
 
-use log::{error, info, warn};
+use log::{info, warn};
 use serenity::all::ChannelId;
 use serenity::builder::CreateMessage;
 use serenity::model::channel::Message;
@@ -8,44 +8,40 @@ use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 
 use super::CommunicationManager;
+use crate::actions::MessageAction;
 use crate::communications::TwoWayChannel;
-use crate::prompt::{ChatMessage, MessageAction, SystemMessageSeverity};
+use crate::prompt::{ChatMessage, SystemMessageSeverity};
 
-struct ProjectLilyDiscordHandler {
-    channel_id: ChannelId,
-    channel: TwoWayChannel,
+pub struct DiscordSettings {
+    pub channel_id: Option<u64>,
+    pub log_all: bool,
 }
 
-pub fn run(communications: &mut CommunicationManager) {
+struct ProjectLilyDiscordHandler {
+    channel: TwoWayChannel,
+    settings: DiscordSettings,
+}
+
+pub fn run(settings: DiscordSettings, communications: &mut CommunicationManager) {
     let Ok(token) = env::var("DISCORD_TOKEN") else {
         warn!("Failed to find Discord token in environment. Discord will not be available.");
         return;
     };
 
-    let Ok(channel_id_str) = env::var("DISCORD_CHANNEL") else {
-        warn!("Failed to find Discord channel ID in environment. Discord will not be available.");
-        return;
-    };
-
-    let Ok(channel_id_index) = channel_id_str.parse::<u64>() else {
-        error!("Failed to parse Discord channel ID as a number. Discord will not be available.");
+    if settings.channel_id.is_none() {
+        warn!("Discord channel ID was not provided. Discord will not be available.");
         return;
     };
 
     let channel = communications.open_two_way_channel("discord");
 
     tokio::spawn(async move {
-        let channel_id = ChannelId::new(channel_id_index);
-
         let intents = GatewayIntents::GUILD_MESSAGES
             | GatewayIntents::DIRECT_MESSAGES
             | GatewayIntents::MESSAGE_CONTENT;
 
         let mut client = Client::builder(&token, intents)
-            .event_handler(ProjectLilyDiscordHandler {
-                channel_id,
-                channel,
-            })
+            .event_handler(ProjectLilyDiscordHandler { channel, settings })
             .await
             .expect("Error creating client");
 
@@ -67,6 +63,7 @@ impl EventHandler for ProjectLilyDiscordHandler {
             .send_message(ChatMessage::System {
                 severity: SystemMessageSeverity::Info,
                 content,
+                tokens: None,
             })
             .await;
 
@@ -75,6 +72,8 @@ impl EventHandler for ProjectLilyDiscordHandler {
             return;
         }
 
+        let channel_id = ChannelId::new(self.settings.channel_id.unwrap());
+
         loop {
             let message = self.channel.receive_message_blocking().await;
             let Ok(message) = message else {
@@ -82,13 +81,24 @@ impl EventHandler for ProjectLilyDiscordHandler {
                 break;
             };
 
-            if let ChatMessage::Assistant {
+            if self.settings.log_all {
+                if let ChatMessage::Assistant {
+                    action, content, ..
+                } = message
+                {
+                    let message = format!("```yml\n{}: {}```", action, content);
+                    channel_id
+                        .send_message(&ctx.http, CreateMessage::new().content(message))
+                        .await
+                        .unwrap();
+                }
+            } else if let ChatMessage::Assistant {
                 action: MessageAction::Say,
                 content,
                 ..
             } = message
             {
-                self.channel_id
+                channel_id
                     .send_message(&ctx.http, CreateMessage::new().content(content))
                     .await
                     .unwrap();
@@ -97,6 +107,11 @@ impl EventHandler for ProjectLilyDiscordHandler {
     }
 
     async fn message(&self, _ctx: Context, msg: Message) {
+        let expected_channel_id = ChannelId::new(self.settings.channel_id.unwrap());
+        if msg.channel_id != expected_channel_id {
+            return;
+        }
+
         if msg.author.bot {
             return;
         }
@@ -105,8 +120,8 @@ impl EventHandler for ProjectLilyDiscordHandler {
             .channel
             .send_message(ChatMessage::User {
                 username: msg.author.name,
-                action: MessageAction::Say,
                 content: msg.content.clone(),
+                tokens: None,
             })
             .await;
 

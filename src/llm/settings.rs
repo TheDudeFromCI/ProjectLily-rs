@@ -1,5 +1,4 @@
 use std::fmt;
-use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
@@ -22,7 +21,6 @@ impl fmt::Display for LogitBias {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompletionSettings {
     pub model: Option<String>,
-    pub context_length: usize,
     pub temperature: f32,
     pub top_p: f32,
     pub min_p: f32,
@@ -41,14 +39,13 @@ pub struct CompletionSettings {
     pub user_message_suffix: String,
     pub assistant_message_prefix: String,
     pub assistant_message_suffix: String,
-    pub grammar: Option<PathBuf>,
+    pub grammar: Option<String>,
 }
 
 impl Default for CompletionSettings {
     fn default() -> Self {
         Self {
             model: None,
-            context_length: 2048,
             temperature: 0.7,
             top_p: 1.0,
             min_p: 0.05,

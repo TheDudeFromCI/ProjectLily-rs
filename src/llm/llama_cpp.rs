@@ -54,11 +54,6 @@ impl LLM for LlamaCppServer {
         prompt: String,
         settings: &CompletionSettings,
     ) -> Result<ChatResponse, LLMError> {
-        let grammar = match &settings.grammar {
-            Some(grammar) => Some(std::fs::read_to_string(grammar)?),
-            None => None,
-        };
-
         let mut json = json::object! {
             prompt: prompt,
             temperature: settings.temperature,
@@ -71,7 +66,7 @@ impl LLM for LlamaCppServer {
             presence_penalty: settings.presence_penalty,
             frequency_penalty: settings.frequency_penalty,
             logit_bias: Vec::<String>::with_capacity(0),
-            grammar: grammar,
+            grammar: settings.grammar.clone(),
             cache_prompt: true,
             stream: false,
         };
@@ -128,6 +123,38 @@ impl LLM for LlamaCppServer {
             generated_token_count: res_json["tokens_predicted"].as_usize().unwrap_or(0),
             generation_time: elapsed.as_secs_f64(),
         })
+    }
+
+    async fn tokenize(&self, text: String) -> Result<Vec<i32>, LLMError> {
+        let json = json::object! {
+            content: text,
+        };
+
+        let url = format!("{}/tokenize", self.url);
+
+        let response = reqwest::Client::new()
+            .post(url)
+            .header("Content-Type", "application/json")
+            .body(json.dump())
+            .send()
+            .await
+            .map_err(|_| LLMError::FailedToAccessServer)?;
+
+        let res_text = response
+            .text()
+            .await
+            .map_err(|_| LLMError::FailedToAccessServer)?;
+
+        let res_json = json::parse(&res_text).map_err(|_| LLMError::JsonParseError {
+            json: res_text.clone(),
+        })?;
+
+        let tokens = res_json["tokens"]
+            .members()
+            .map(|t| t.as_i32().unwrap_or(0))
+            .collect::<Vec<i32>>();
+
+        Ok(tokens)
     }
 }
 
