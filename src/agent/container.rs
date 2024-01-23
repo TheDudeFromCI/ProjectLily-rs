@@ -87,7 +87,6 @@ impl Agent {
 
     pub fn update_system_prompt(&mut self) {
         let time = &Local::now().format("%Y-%m-%d").to_string();
-        let context_length = &self.settings.llm_options.context_length.to_string();
         let command_list = commands::COMMANDS
             .iter()
             .map(|c| {
@@ -104,7 +103,6 @@ impl Agent {
         let prompt = SYSTEM_PROMPT
             .trim()
             .replace("{time}", time)
-            .replace("{context_length}", context_length)
             .replace("{ai_name}", &self.settings.name)
             .replace("{creator}", &self.settings.creator)
             .replace("{command_list}", &command_list)

@@ -1,7 +1,6 @@
 pub const SYSTEM_PROMPT: &str = r#"
 # Meta
 Current Date: {time}
-Token Context Length: {context_length}
 
 # Who Are You?
 You are {ai_name}, an AI part of ProjectLily, created by {creator} for advanced AI interactions.
