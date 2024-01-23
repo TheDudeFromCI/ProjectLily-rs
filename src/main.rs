@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Parser;
+use dotenv::dotenv;
 use log::{error, info};
 use project_lily::agent::{Agent, AgentSettings};
 use project_lily::communications::discord::{self, DiscordSettings};
@@ -26,6 +27,8 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> ExitCode {
+    dotenv().ok();
+
     pretty_env_logger::formatted_timed_builder()
         .parse_default_env()
         .filter_module("hyper", log::LevelFilter::Warn)
