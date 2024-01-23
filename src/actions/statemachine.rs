@@ -16,13 +16,13 @@ impl ProcessStateMachine {
     pub fn next_action(&mut self) -> &MessageAction {
         let next_action = match self.last_action {
             None => MessageAction::SituationalAnalysis,
-            Some(MessageAction::SituationalAnalysis) => MessageAction::ProblemIdentification,
-            Some(MessageAction::ProblemIdentification) => MessageAction::EmotionalResponse,
+            Some(MessageAction::SituationalAnalysis) => MessageAction::EmotionalResponse,
             Some(MessageAction::EmotionalResponse) => MessageAction::LogicalResponse,
-            Some(MessageAction::LogicalResponse) => MessageAction::EmotionalState,
-            Some(MessageAction::EmotionalState) => MessageAction::GoalIdentification,
+            Some(MessageAction::LogicalResponse) => MessageAction::ProblemIdentification,
+            Some(MessageAction::ProblemIdentification) => MessageAction::GoalIdentification,
             Some(MessageAction::GoalIdentification) => MessageAction::ProblemSolving,
-            Some(MessageAction::ProblemSolving) => MessageAction::Command,
+            Some(MessageAction::ProblemSolving) => MessageAction::EmotionalState,
+            Some(MessageAction::EmotionalState) => MessageAction::Command,
             Some(MessageAction::Command) => MessageAction::Say,
             Some(MessageAction::Say) => MessageAction::SituationalAnalysis,
             Some(MessageAction::Query { .. }) => MessageAction::SituationalAnalysis,
