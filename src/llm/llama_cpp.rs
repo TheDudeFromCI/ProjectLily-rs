@@ -54,11 +54,6 @@ impl LLM for LlamaCppServer {
         prompt: String,
         settings: &CompletionSettings,
     ) -> Result<ChatResponse, LLMError> {
-        let grammar = match &settings.grammar {
-            Some(grammar) => Some(std::fs::read_to_string(grammar)?),
-            None => None,
-        };
-
         let mut json = json::object! {
             prompt: prompt,
             temperature: settings.temperature,
@@ -71,7 +66,7 @@ impl LLM for LlamaCppServer {
             presence_penalty: settings.presence_penalty,
             frequency_penalty: settings.frequency_penalty,
             logit_bias: Vec::<String>::with_capacity(0),
-            grammar: grammar,
+            grammar: settings.grammar.clone(),
             cache_prompt: true,
             stream: false,
         };

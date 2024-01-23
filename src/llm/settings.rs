@@ -1,5 +1,4 @@
 use std::fmt;
-use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
@@ -41,7 +40,7 @@ pub struct CompletionSettings {
     pub user_message_suffix: String,
     pub assistant_message_prefix: String,
     pub assistant_message_suffix: String,
-    pub grammar: Option<PathBuf>,
+    pub grammar: Option<String>,
 }
 
 impl Default for CompletionSettings {

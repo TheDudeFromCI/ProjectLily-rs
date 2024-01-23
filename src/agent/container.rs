@@ -1,11 +1,11 @@
 use chrono::Local;
 use itertools::Itertools;
-use log::debug;
+use log::{debug, info};
 
-use super::{AgentError, AgentSettings};
+use super::{AgentError, AgentSettings, ProcessStateMachine};
 use crate::commands::{self};
 use crate::communications::CommunicationManager;
-use crate::llm::{ChatResponse, LlmWrapper};
+use crate::llm::LlmWrapper;
 use crate::mem_db::MemoryDB;
 use crate::prompt::{ChatMessage, MessageLog, COMMAND_FORMAT, SYSTEM_PROMPT};
 
@@ -15,6 +15,7 @@ pub struct Agent {
     pub mem_db: MemoryDB,
     pub log: MessageLog,
     pub communication_manager: CommunicationManager,
+    pub process_state_machine: ProcessStateMachine,
 }
 
 impl Agent {
@@ -25,6 +26,7 @@ impl Agent {
             mem_db: MemoryDB::new().await?,
             log: MessageLog::default(),
             communication_manager: CommunicationManager::default(),
+            process_state_machine: ProcessStateMachine::default(),
         };
         agent.update_system_prompt();
 
@@ -36,26 +38,51 @@ impl Agent {
             self.log.add_message(message);
         }
 
-        let response = loop {
-            let response = self.query_llm().await?;
-            if !response.is_empty() {
-                break response;
-            }
-        };
-
+        let response = self.query_llm().await?;
         self.log.clear_temp();
-        commands::execute(self, &response.text).await;
+        self.log_message(response).await;
+
+        // commands::execute(self, &response.text).await;
 
         Ok(())
     }
 
-    async fn query_llm(&mut self) -> Result<ChatResponse, AgentError> {
-        let prompt = self.log.format(&self.settings.llm_options);
+    async fn query_llm(&mut self) -> Result<ChatMessage, AgentError> {
+        let mut prompt = self.log.format(&self.settings.llm_options);
+        let action = self.process_state_machine.next_action();
+        let prefix = action.as_prompt();
 
-        Ok(self
-            .llm
-            .query_completion(prompt, &self.settings.llm_options)
-            .await?)
+        prompt += &self.settings.llm_options.assistant_message_prefix;
+        prompt += &prefix;
+        self.settings.llm_options.grammar = Some(action.as_grammar());
+
+        debug!(
+            "Querying LLM with prompt:\n==========\n{}\n==========",
+            &prompt
+        );
+        info!("Querying LLM with prompt prefix: `{}`", &prefix);
+
+        let response = loop {
+            let response = self
+                .llm
+                .query_completion(prompt.clone(), &self.settings.llm_options)
+                .await?;
+
+            if !response.is_empty() {
+                break response.text;
+            }
+
+            debug!("LLM response was empty, retrying...");
+        };
+
+        info!("LLM response: {:?}", &response);
+
+        let message = ChatMessage::Assistant {
+            action: action.clone(),
+            content: response,
+        };
+
+        Ok(message)
     }
 
     pub fn update_system_prompt(&mut self) {
@@ -85,7 +112,7 @@ impl Agent {
             .replace("{memory_context}", memory_context)
             .replace("{primary_directive}", &self.settings.directive);
 
-        debug!(
+        info!(
             "Updating system prompt.\n==========\n{}\n==========",
             &prompt
         );
