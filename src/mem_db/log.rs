@@ -1,8 +1,8 @@
 use itertools::Itertools;
 use log::info;
 
-use super::{ChatMessage, SystemMessageSeverity};
 use crate::llm::CompletionSettings;
+use crate::prompt::{ChatMessage, SystemMessageSeverity};
 
 pub struct MessageLog {
     messages: Vec<ChatMessage>,
@@ -19,10 +19,6 @@ impl MessageLog {
         }
     }
 
-    pub fn clear_log(&mut self) {
-        self.messages.truncate(1);
-    }
-
     pub fn update_pre_prompt(&mut self, pre_prompt: String, tokens: usize) {
         self.messages[0] = ChatMessage::System {
             severity: SystemMessageSeverity::Info,
@@ -34,10 +30,6 @@ impl MessageLog {
     pub fn add_message(&mut self, message: ChatMessage) {
         info!("{} : {}", message.get_role(), message.get_content());
         self.messages.push(message);
-    }
-
-    pub fn get_messages(&self) -> &[ChatMessage] {
-        &self.messages
     }
 
     pub fn format(&self, settings: &CompletionSettings) -> String {

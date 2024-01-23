@@ -5,13 +5,12 @@ use super::{AgentError, AgentSettings, ProcessStateMachine};
 use crate::communications::CommunicationManager;
 use crate::llm::LlmWrapper;
 use crate::mem_db::MemoryDB;
-use crate::prompt::{ChatMessage, MessageLog, SYSTEM_PROMPT};
+use crate::prompt::{ChatMessage, SYSTEM_PROMPT};
 
 pub struct Agent {
     pub settings: AgentSettings,
     pub llm: LlmWrapper,
     pub mem_db: MemoryDB,
-    pub log: MessageLog,
     pub communication_manager: CommunicationManager,
     pub process_state_machine: ProcessStateMachine,
 }
@@ -22,7 +21,6 @@ impl Agent {
             settings,
             llm,
             mem_db: MemoryDB::new().await?,
-            log: MessageLog::default(),
             communication_manager: CommunicationManager::default(),
             process_state_machine: ProcessStateMachine::default(),
         };
@@ -34,7 +32,7 @@ impl Agent {
     pub async fn update(&mut self) -> Result<(), AgentError> {
         for mut message in self.communication_manager.receive_messages().await {
             self.update_token_count(&mut message).await?;
-            self.log.add_message(message);
+            self.mem_db.add_log_memory(message);
         }
 
         let response = self.query_llm().await?;
@@ -55,7 +53,7 @@ impl Agent {
     }
 
     async fn query_llm(&mut self) -> Result<ChatMessage, AgentError> {
-        let mut prompt = self.log.format(&self.settings.llm_options);
+        let mut prompt = self.mem_db.get_log_prompt(&self.settings.llm_options);
         let action = self.process_state_machine.next_action();
         let prefix = action.as_prompt();
 
@@ -114,7 +112,7 @@ impl Agent {
         );
 
         let tokens = self.llm.tokenize(prompt.clone()).await?.len();
-        self.log.update_pre_prompt(prompt, tokens);
+        self.mem_db.update_pre_prompt(prompt, tokens);
 
         Ok(())
     }
@@ -122,7 +120,8 @@ impl Agent {
     pub async fn log_message(&mut self, mut message: ChatMessage) -> Result<(), AgentError> {
         self.update_token_count(&mut message).await?;
         self.communication_manager.send_message(&message).await;
-        self.log.add_message(message);
+        self.mem_db.add_log_memory(message);
+
         Ok(())
     }
 }
