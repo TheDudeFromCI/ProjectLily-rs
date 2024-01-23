@@ -32,9 +32,8 @@ impl Agent {
     }
 
     pub async fn update(&mut self) -> Result<(), AgentError> {
-        for mut message in self.communication_manager.receive_messages().await {
-            self.update_token_count(&mut message).await?;
-            self.mem_db.add_log_memory(message);
+        for message in self.communication_manager.receive_messages().await {
+            self.log_message(message).await?;
         }
 
         let response = self.query_llm().await?;
@@ -138,7 +137,7 @@ impl Agent {
     pub async fn log_message(&mut self, mut message: ChatMessage) -> Result<(), AgentError> {
         self.update_token_count(&mut message).await?;
         self.communication_manager.send_message(&message).await;
-        self.mem_db.add_log_memory(message);
+        self.mem_db.add_log_memory(message)?;
 
         Ok(())
     }

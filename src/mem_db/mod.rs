@@ -1,6 +1,8 @@
+mod io;
 mod log;
 mod vector;
 
+use rusqlite::Connection;
 use rust_bert::RustBertError;
 use thiserror::Error;
 use tokio::task::JoinError;
@@ -13,14 +15,22 @@ use crate::prompt::ChatMessage;
 pub struct MemoryDB {
     log: MessageLog,
     vector: VectorDB,
+    conn: Connection,
 }
 
 impl MemoryDB {
     pub async fn new() -> Result<Self, MemoryDBError> {
-        Ok(Self {
+        let mut s = Self {
             log: MessageLog::new(),
             vector: VectorDB::new().await?,
-        })
+            conn: io::open_connection()?,
+        };
+
+        for message in io::get_recent_logs(&s.conn, 4096)? {
+            s.log.add_message(message);
+        }
+
+        Ok(s)
     }
 
     pub fn update_pre_prompt(&mut self, pre_prompt: String, tokens: usize) {
@@ -40,8 +50,10 @@ impl MemoryDB {
         self.vector.search(query, count)
     }
 
-    pub fn add_log_memory(&mut self, message: ChatMessage) {
+    pub fn add_log_memory(&mut self, message: ChatMessage) -> Result<(), MemoryDBError> {
+        io::append_to_log(&self.conn, &message)?;
         self.log.add_message(message);
+        Ok(())
     }
 
     pub fn get_log_prompt(&self, settings: &CompletionSettings) -> String {
@@ -65,4 +77,10 @@ pub enum MemoryDBError {
     KdTreeError(#[from] kdtree::ErrorKind),
     #[error("Failed to spawn blocking task: {0}")]
     AsyncError(#[from] JoinError),
+    #[error("Database URL not set in environment variables")]
+    DatabaseUrlNotSet,
+    #[error("Sqlite error: {0}")]
+    SqliteError(#[from] rusqlite::Error),
+    #[error("Unexpected database entry. Expected: `{expected}`, Actual: `{actual}`")]
+    UnexpectedDatabaseEntry { expected: String, actual: String },
 }

@@ -1,4 +1,5 @@
 use std::fmt;
+use std::str::FromStr;
 
 use itertools::Itertools;
 
@@ -108,6 +109,29 @@ impl MessageAction {
 impl fmt::Display for MessageAction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name())
+    }
+}
+
+impl FromStr for MessageAction {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "QUERY" => Ok(MessageAction::Query {
+                question: None,
+                answers: QueryAnswers::Boolean,
+            }),
+            "SITUATIONAL_ANALYSIS" => Ok(MessageAction::SituationalAnalysis),
+            "EMOTIONAL_RESPONSE" => Ok(MessageAction::EmotionalResponse),
+            "LOGICAL_RESPONSE" => Ok(MessageAction::LogicalResponse),
+            "PROBLEM_IDENTIFICATION" => Ok(MessageAction::ProblemIdentification),
+            "GOAL_IDENTIFICATION" => Ok(MessageAction::GoalIdentification),
+            "PROBLEM_SOLVING" => Ok(MessageAction::ProblemSolving),
+            "EMOTIONAL_STATE" => Ok(MessageAction::EmotionalState),
+            "COMMAND" => Ok(MessageAction::Command),
+            "SAY" => Ok(MessageAction::Say),
+            _ => Err(format!("Invalid action: {}", s)),
+        }
     }
 }
 
