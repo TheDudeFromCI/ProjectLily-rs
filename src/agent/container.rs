@@ -1,13 +1,11 @@
 use chrono::Local;
-use itertools::Itertools;
 use log::{debug, info};
 
 use super::{AgentError, AgentSettings, ProcessStateMachine};
-use crate::commands::{self};
 use crate::communications::CommunicationManager;
 use crate::llm::LlmWrapper;
 use crate::mem_db::MemoryDB;
-use crate::prompt::{ChatMessage, MessageLog, COMMAND_FORMAT, SYSTEM_PROMPT};
+use crate::prompt::{ChatMessage, MessageLog, SYSTEM_PROMPT};
 
 pub struct Agent {
     pub settings: AgentSettings,
@@ -40,7 +38,7 @@ impl Agent {
 
         let response = self.query_llm().await?;
         self.log.clear_temp();
-        self.log_message(response).await;
+        self.log_message(response).await?;
 
         // commands::execute(self, &response.text).await;
 
@@ -100,17 +98,6 @@ impl Agent {
 
     pub async fn update_system_prompt(&mut self) -> Result<(), AgentError> {
         let time = &Local::now().format("%Y-%m-%d").to_string();
-        let command_list = commands::COMMANDS
-            .iter()
-            .map(|c| {
-                COMMAND_FORMAT
-                    .trim()
-                    .replace("{cmd_name}", c.name())
-                    .replace("{args}", &c.args().join(" "))
-                    .replace("{description}", c.description())
-                    .replace("{example}", c.usage())
-            })
-            .join("\n");
         let memory_context = "None";
 
         let prompt = SYSTEM_PROMPT
@@ -118,7 +105,7 @@ impl Agent {
             .replace("{time}", time)
             .replace("{ai_name}", &self.settings.name)
             .replace("{creator}", &self.settings.creator)
-            .replace("{command_list}", &command_list)
+            .replace("{command_list}", "")
             .replace("{personality}", &self.settings.persona)
             .replace("{memory_context}", memory_context)
             .replace("{primary_directive}", &self.settings.directive);

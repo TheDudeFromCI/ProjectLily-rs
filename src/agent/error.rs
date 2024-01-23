@@ -1,6 +1,5 @@
 use thiserror::Error;
 
-use crate::commands::CommandError;
 use crate::llm::LLMError;
 use crate::mem_db::MemoryDBError;
 
@@ -14,6 +13,4 @@ pub enum AgentError {
     MemoryDBError(#[from] MemoryDBError),
     #[error("An error has occurred within the LLM: {0}")]
     LLMError(#[from] LLMError),
-    #[error("An error has occurred within the Agent: {0}")]
-    CommandError(#[from] CommandError),
 }
