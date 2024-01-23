@@ -124,6 +124,38 @@ impl LLM for LlamaCppServer {
             generation_time: elapsed.as_secs_f64(),
         })
     }
+
+    async fn tokenize(&self, text: String) -> Result<Vec<i32>, LLMError> {
+        let json = json::object! {
+            content: text,
+        };
+
+        let url = format!("{}/tokenize", self.url);
+
+        let response = reqwest::Client::new()
+            .post(url)
+            .header("Content-Type", "application/json")
+            .body(json.dump())
+            .send()
+            .await
+            .map_err(|_| LLMError::FailedToAccessServer)?;
+
+        let res_text = response
+            .text()
+            .await
+            .map_err(|_| LLMError::FailedToAccessServer)?;
+
+        let res_json = json::parse(&res_text).map_err(|_| LLMError::JsonParseError {
+            json: res_text.clone(),
+        })?;
+
+        let tokens = res_json["tokens"]
+            .members()
+            .map(|t| t.as_i32().unwrap_or(0))
+            .collect::<Vec<i32>>();
+
+        Ok(tokens)
+    }
 }
 
 impl From<LlamaCppServer> for LlmWrapper {

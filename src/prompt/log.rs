@@ -15,6 +15,7 @@ impl MessageLog {
             messages: vec![ChatMessage::System {
                 severity: SystemMessageSeverity::Info,
                 content: "Pre-Prompt Placeholder".to_string(),
+                tokens: None,
             }],
             temp_messages: Vec::new(),
         }
@@ -29,10 +30,11 @@ impl MessageLog {
         self.temp_messages.clear();
     }
 
-    pub fn update_pre_prompt(&mut self, pre_prompt: String) {
+    pub fn update_pre_prompt(&mut self, pre_prompt: String, tokens: usize) {
         self.messages[0] = ChatMessage::System {
             severity: SystemMessageSeverity::Info,
             content: pre_prompt,
+            tokens: Some(tokens),
         };
     }
 

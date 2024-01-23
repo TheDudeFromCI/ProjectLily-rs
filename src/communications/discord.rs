@@ -62,6 +62,7 @@ impl EventHandler for ProjectLilyDiscordHandler {
             .send_message(ChatMessage::System {
                 severity: SystemMessageSeverity::Info,
                 content,
+                tokens: None,
             })
             .await;
 
@@ -119,6 +120,7 @@ impl EventHandler for ProjectLilyDiscordHandler {
             .send_message(ChatMessage::User {
                 username: msg.author.name,
                 content: msg.content.clone(),
+                tokens: None,
             })
             .await;
 

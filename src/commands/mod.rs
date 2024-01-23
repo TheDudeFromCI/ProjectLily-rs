@@ -36,6 +36,7 @@ impl From<CommandExec> for ChatMessage {
         ChatMessage::Assistant {
             action: MessageAction::Command,
             content: value.cmd_line,
+            tokens: None,
         }
     }
 }
@@ -57,6 +58,7 @@ pub async fn execute(agent: &mut Agent, cmd: &str) {
             agent.log_temp_message(ChatMessage::Assistant {
                 action: MessageAction::Command,
                 content: cmd.to_string(),
+                tokens: None,
             });
 
             print_cmd_err(agent, err);
@@ -105,6 +107,7 @@ fn print_cmd_err(agent: &mut Agent, err: CommandError) {
             agent.log_temp_message(ChatMessage::System {
                 severity: SystemMessageSeverity::Error,
                 content,
+                tokens: None,
             })
         }
 
@@ -119,6 +122,7 @@ fn print_cmd_err(agent: &mut Agent, err: CommandError) {
             agent.log_temp_message(ChatMessage::System {
                 severity: SystemMessageSeverity::Error,
                 content,
+                tokens: None,
             })
         }
 
@@ -131,6 +135,7 @@ fn print_cmd_err(agent: &mut Agent, err: CommandError) {
             agent.log_temp_message(ChatMessage::System {
                 severity: SystemMessageSeverity::Error,
                 content,
+                tokens: None,
             })
         }
 
@@ -139,6 +144,7 @@ fn print_cmd_err(agent: &mut Agent, err: CommandError) {
             agent.log_temp_message(ChatMessage::System {
                 severity: SystemMessageSeverity::Error,
                 content,
+                tokens: None,
             })
         }
 
@@ -147,6 +153,7 @@ fn print_cmd_err(agent: &mut Agent, err: CommandError) {
             agent.log_temp_message(ChatMessage::System {
                 severity: SystemMessageSeverity::Error,
                 content,
+                tokens: None,
             })
         }
     }

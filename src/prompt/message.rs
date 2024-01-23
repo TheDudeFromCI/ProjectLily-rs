@@ -6,14 +6,17 @@ pub enum ChatMessage {
     System {
         severity: SystemMessageSeverity,
         content: String,
+        tokens: Option<usize>,
     },
     User {
         username: String,
         content: String,
+        tokens: Option<usize>,
     },
     Assistant {
         action: MessageAction,
         content: String,
+        tokens: Option<usize>,
     },
 }
 
@@ -28,15 +31,21 @@ impl ChatMessage {
 
     pub fn get_content(&self) -> String {
         match self {
-            ChatMessage::System { severity, content } => {
+            ChatMessage::System {
+                severity, content, ..
+            } => {
                 format!("[{}] {}", severity, content)
             }
 
-            ChatMessage::User { username, content } => {
+            ChatMessage::User {
+                username, content, ..
+            } => {
                 format!("{}: {}", username, content)
             }
 
-            ChatMessage::Assistant { action, content } => {
+            ChatMessage::Assistant {
+                action, content, ..
+            } => {
                 format!("{}: {}", action, content)
             }
         }
@@ -70,6 +79,22 @@ impl ChatMessage {
                     settings.assistant_message_suffix
                 )
             }
+        }
+    }
+
+    pub fn get_tokens(&self) -> Option<usize> {
+        match self {
+            ChatMessage::System { tokens, .. } => *tokens,
+            ChatMessage::User { tokens, .. } => *tokens,
+            ChatMessage::Assistant { tokens, .. } => *tokens,
+        }
+    }
+
+    pub fn set_tokens(&mut self, tokens: usize) {
+        match self {
+            ChatMessage::System { tokens: t, .. } => *t = Some(tokens),
+            ChatMessage::User { tokens: t, .. } => *t = Some(tokens),
+            ChatMessage::Assistant { tokens: t, .. } => *t = Some(tokens),
         }
     }
 }

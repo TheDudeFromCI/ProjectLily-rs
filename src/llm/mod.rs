@@ -29,6 +29,10 @@ impl LlmWrapper {
     ) -> Result<ChatResponse, LLMError> {
         self.llm.query_completion(prompt, settings).await
     }
+
+    pub async fn tokenize(&self, text: String) -> Result<Vec<i32>, LLMError> {
+        self.llm.tokenize(text).await
+    }
 }
 
 #[async_trait::async_trait]
@@ -40,6 +44,8 @@ pub trait LLM: Send + Sync {
         prompt: String,
         settings: &CompletionSettings,
     ) -> Result<ChatResponse, LLMError>;
+
+    async fn tokenize(&self, text: String) -> Result<Vec<i32>, LLMError>;
 }
 
 #[derive(Debug)]

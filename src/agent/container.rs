@@ -28,7 +28,7 @@ impl Agent {
             communication_manager: CommunicationManager::default(),
             process_state_machine: ProcessStateMachine::default(),
         };
-        agent.update_system_prompt();
+        agent.update_system_prompt().await?;
 
         Ok(agent)
     }
@@ -44,6 +44,17 @@ impl Agent {
 
         // commands::execute(self, &response.text).await;
 
+        Ok(())
+    }
+
+    pub async fn update_token_count(&self, message: &mut ChatMessage) -> Result<(), AgentError> {
+        if message.get_tokens().is_some() {
+            return Ok(());
+        }
+
+        let content = message.format(&self.settings.llm_options);
+        let tokens = self.llm.tokenize(content).await?;
+        message.set_tokens(tokens.len());
         Ok(())
     }
 
@@ -77,15 +88,17 @@ impl Agent {
 
         info!("LLM response: {:?}", &response);
 
-        let message = ChatMessage::Assistant {
+        let mut message = ChatMessage::Assistant {
             action: action.clone(),
             content: response,
+            tokens: None,
         };
+        self.update_token_count(&mut message).await?;
 
         Ok(message)
     }
 
-    pub fn update_system_prompt(&mut self) {
+    pub async fn update_system_prompt(&mut self) -> Result<(), AgentError> {
         let time = &Local::now().format("%Y-%m-%d").to_string();
         let command_list = commands::COMMANDS
             .iter()
@@ -114,12 +127,18 @@ impl Agent {
             "Updating system prompt.\n==========\n{}\n==========",
             &prompt
         );
-        self.log.update_pre_prompt(prompt);
+
+        let tokens = self.llm.tokenize(prompt.clone()).await?.len();
+        self.log.update_pre_prompt(prompt, tokens);
+
+        Ok(())
     }
 
-    pub async fn log_message(&mut self, message: ChatMessage) {
+    pub async fn log_message(&mut self, mut message: ChatMessage) -> Result<(), AgentError> {
+        self.update_token_count(&mut message).await?;
         self.communication_manager.send_message(&message).await;
         self.log.add_message(message);
+        Ok(())
     }
 
     pub fn log_temp_message(&mut self, message: ChatMessage) {
