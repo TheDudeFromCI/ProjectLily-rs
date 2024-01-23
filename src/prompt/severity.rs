@@ -8,13 +8,19 @@ pub enum SystemMessageSeverity {
     Error,
 }
 
+impl SystemMessageSeverity {
+    pub fn name(&self) -> &'static str {
+        match self {
+            SystemMessageSeverity::Debug => "debug",
+            SystemMessageSeverity::Info => "info",
+            SystemMessageSeverity::Warn => "warn",
+            SystemMessageSeverity::Error => "error",
+        }
+    }
+}
+
 impl fmt::Display for SystemMessageSeverity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            SystemMessageSeverity::Debug => write!(f, "DEBUG"),
-            SystemMessageSeverity::Info => write!(f, "INFO"),
-            SystemMessageSeverity::Warn => write!(f, "WARN"),
-            SystemMessageSeverity::Error => write!(f, "ERROR"),
-        }
+        write!(f, "{}", self.name())
     }
 }

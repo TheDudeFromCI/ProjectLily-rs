@@ -1,11 +1,15 @@
+mod io;
 mod log;
+mod models;
 mod vector;
 
+use diesel::{ConnectionError, SqliteConnection};
 use rust_bert::RustBertError;
 use thiserror::Error;
 use tokio::task::JoinError;
 
 use self::log::MessageLog;
+use self::models::ChatLog;
 use self::vector::VectorDB;
 use crate::llm::CompletionSettings;
 use crate::prompt::ChatMessage;
@@ -13,6 +17,7 @@ use crate::prompt::ChatMessage;
 pub struct MemoryDB {
     log: MessageLog,
     vector: VectorDB,
+    conn: SqliteConnection,
 }
 
 impl MemoryDB {
@@ -20,6 +25,7 @@ impl MemoryDB {
         Ok(Self {
             log: MessageLog::new(),
             vector: VectorDB::new().await?,
+            conn: io::establish_connection()?,
         })
     }
 
@@ -40,8 +46,10 @@ impl MemoryDB {
         self.vector.search(query, count)
     }
 
-    pub fn add_log_memory(&mut self, message: ChatMessage) {
+    pub fn add_log_memory(&mut self, message: ChatMessage) -> Result<(), MemoryDBError> {
+        ChatLog::insert(&message, &mut self.conn)?;
         self.log.add_message(message);
+        Ok(())
     }
 
     pub fn get_log_prompt(&self, settings: &CompletionSettings) -> String {
@@ -65,4 +73,10 @@ pub enum MemoryDBError {
     KdTreeError(#[from] kdtree::ErrorKind),
     #[error("Failed to spawn blocking task: {0}")]
     AsyncError(#[from] JoinError),
+    #[error("Database URL not specified")]
+    DatabaseUrlNotSpecified,
+    #[error("Cannot connect to database: {0:?}")]
+    CannotConnectToDatabase(#[from] ConnectionError),
+    #[error("Query error: {0:?}")]
+    QueryError(#[from] diesel::result::Error),
 }
