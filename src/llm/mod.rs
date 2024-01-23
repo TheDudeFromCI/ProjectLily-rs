@@ -63,7 +63,7 @@ pub enum LLMError {
     FailedToAccessServer,
     #[error("Model list is empty")]
     EmptyModelList,
-    #[error("Failed to parse JSON")]
+    #[error("Failed to parse JSON response:\n===\n{json}\n===")]
     JsonParseError { json: String },
     #[error("Failed to serialize query")]
     FailedToSerializeQuery,
