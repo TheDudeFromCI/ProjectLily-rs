@@ -51,6 +51,13 @@ impl Agent {
         let content = message.format(&self.settings.llm_options);
         let tokens = self.llm.tokenize(content).await?;
         message.set_tokens(tokens.len());
+
+        debug!(
+            "Updating token count for message: {}, count: {}",
+            message.format(&self.settings.llm_options),
+            tokens.len()
+        );
+
         Ok(())
     }
 
