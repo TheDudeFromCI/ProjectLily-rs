@@ -32,15 +32,13 @@ impl Agent {
     }
 
     pub async fn update(&mut self) -> Result<(), AgentError> {
-        for message in self.communication_manager.receive_messages().await {
+        for mut message in self.communication_manager.receive_messages().await {
+            self.update_token_count(&mut message).await?;
             self.log.add_message(message);
         }
 
         let response = self.query_llm().await?;
-        self.log.clear_temp();
         self.log_message(response).await?;
-
-        // commands::execute(self, &response.text).await;
 
         Ok(())
     }
@@ -126,9 +124,5 @@ impl Agent {
         self.communication_manager.send_message(&message).await;
         self.log.add_message(message);
         Ok(())
-    }
-
-    pub fn log_temp_message(&mut self, message: ChatMessage) {
-        self.log.add_temp_message(message);
     }
 }
